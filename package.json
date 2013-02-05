@@ -1,0 +1,22 @@
+{
+	"name":"backbone-test-webapp",
+	"description":"",
+	"version":"1.0.0",
+	"homepage":"http://www.atzbert.net",
+	"author":{
+		"name":"Tino",
+		"email":"tino.nitze@gmail.com"
+	},
+	"engines":{
+		"node":">= 0.8.8"
+	},
+	"dependencies":{
+		"underscore":"1.4.x",
+		"requirejs": "2.1.x",
+		"grunt":"0.3.x",
+		"grunt-lib-contrib": "0.3.x",
+		"grunt-contrib-coffee":"0.3.x",
+		"grunt-contrib-requirejs":"0.3.x",
+        "grunt-contrib-watch":"0.2.x"
+	}
+}
