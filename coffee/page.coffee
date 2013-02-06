@@ -1,5 +1,3 @@
-require ['backbone', 'AppRouter'], (Backbone, AppRouter) ->
+require ['backbone', 'TodoView'], (Backbone, TodoView) ->
 
-	$ ->
-		AR = new AppRouter
-		Backbone.history.start()
+	new TodoView()

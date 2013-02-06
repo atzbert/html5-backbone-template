@@ -1,300 +1,532 @@
-/*
- * HTML5 Boilerplate
- *
- * What follows is the result of much research on cross-browser styling.
- * Credit left inline and big thanks to Nicolas Gallagher, Jonathan Neal,
- * Kroc Camen, and the H5BP dev community and team.
- */
-
-/* ==========================================================================
-   Base styles: opinionated defaults
-   ========================================================================== */
-
-html,
-button,
-input,
-select,
-textarea {
-    color: #222;
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    font-weight: inherit;
+    font-style: inherit;
+    font-size: 100%;
+    font-family: inherit;
+    vertical-align: baseline;
 }
-
 body {
-    font-size: 1em;
-    line-height: 1.4;
+    line-height: 1;
+    color: black;
+    background: white;
+}
+ol, ul {
+    list-style: none;
+}
+a img {
+    border: none;
 }
 
-/*
- * Remove text-shadow in selection highlight: h5bp.com/i
- * These selection declarations have to be separate.
- * Customize the background color to match your design.
- */
-
-::-moz-selection {
-    background: #b3d4fc;
-    text-shadow: none;
+html {
+    background: #eeeeee;
+}
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.4em;
+    background: #eeeeee;
+    color: #333333;
 }
 
-::selection {
-    background: #b3d4fc;
-    text-shadow: none;
+#todoapp {
+    width: 480px;
+    margin: 0 auto 40px;
+    background: white;
+    padding: 20px;
+    -moz-box-shadow: rgba(0, 0, 0, 0.2) 0 5px 6px 0;
+    -webkit-box-shadow: rgba(0, 0, 0, 0.2) 0 5px 6px 0;
+    -o-box-shadow: rgba(0, 0, 0, 0.2) 0 5px 6px 0;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 5px 6px 0;
+}
+#todoapp h1 {
+    font-size: 36px;
+    font-weight: bold;
+    text-align: center;
+    padding: 20px 0 30px 0;
+    line-height: 1;
 }
 
-/*
- * A better looking default horizontal rule
- */
-
-hr {
-    display: block;
-    height: 1px;
+#create-todo {
+    position: relative;
+}
+#create-todo input {
+    width: 466px;
+    font-size: 24px;
+    font-family: inherit;
+    line-height: 1.4em;
     border: 0;
-    border-top: 1px solid #ccc;
-    margin: 1em 0;
-    padding: 0;
+    outline: none;
+    padding: 6px;
+    border: 1px solid #999999;
+    -moz-box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+    -webkit-box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+    -o-box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
 }
 
-/*
- * Remove the gap between images and the bottom of their containers: h5bp.com/i/440
- */
-
-img {
-    vertical-align: middle;
-}
-
-/*
- * Remove default fieldset styles.
- */
-
-fieldset {
-    border: 0;
-    margin: 0;
-    padding: 0;
-}
-
-/*
- * Allow only vertical resizing of textareas.
- */
-
-textarea {
-    resize: vertical;
-}
-
-/* ==========================================================================
-   Chrome Frame prompt
-   ========================================================================== */
-
-.chromeframe {
-    margin: 0.2em 0;
-    background: #ccc;
-    color: #000;
-    padding: 0.2em 0;
-}
-
-/* ==========================================================================
-   Author's custom styles
-   ========================================================================== */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* ==========================================================================
-   Helper classes
-   ========================================================================== */
-
-/*
- * Image replacement
- */
-
-.ir {
-    background-color: transparent;
-    border: 0;
-    overflow: hidden;
-    /* IE 6/7 fallback */
-    *text-indent: -9999px;
-}
-
-.ir:before {
-    content: "";
-    display: block;
-    width: 0;
-    height: 150%;
-}
-
-/*
- * Hide from both screenreaders and browsers: h5bp.com/u
- */
-
-.hidden {
-    display: none !important;
-    visibility: hidden;
-}
-
-/*
- * Hide only visually, but have it available for screenreaders: h5bp.com/v
- */
-
-.visuallyhidden {
-    border: 0;
-    clip: rect(0 0 0 0);
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    padding: 0;
+#create-todo span {
     position: absolute;
-    width: 1px;
+    z-index: 999;
+    width: 170px;
+    left: 50%;
+    margin-left: -85px;
 }
 
-/*
- * Extends the .visuallyhidden class to allow the element to be focusable
- * when navigated to via the keyboard: h5bp.com/p
- */
-
-.visuallyhidden.focusable:active,
-.visuallyhidden.focusable:focus {
-    clip: auto;
-    height: auto;
-    margin: 0;
-    overflow: visible;
-    position: static;
-    width: auto;
+#todo-list {
+    margin-top: 10px;
 }
-
-/*
- * Hide visually and from screenreaders, but maintain layout
- */
-
-.invisible {
+#todo-list li {
+    padding: 12px 20px 11px 0;
+    position: relative;
+    font-size: 24px;
+    line-height: 1.1em;
+    border-bottom: 1px solid #cccccc;
+}
+#todo-list li:after {
+    content: "\0020";
+    display: block;
+    height: 0;
+    clear: both;
+    overflow: hidden;
     visibility: hidden;
 }
-
-/*
- * Clearfix: contain floats
- *
- * For modern browsers
- * 1. The space content is one way to avoid an Opera bug when the
- *    `contenteditable` attribute is included anywhere else in the document.
- *    Otherwise it causes space to appear at the top and bottom of elements
- *    that receive the `clearfix` class.
- * 2. The use of `table` rather than `block` is only necessary if using
- *    `:before` to contain the top-margins of child elements.
- */
-
-.clearfix:before,
-.clearfix:after {
-    content: " "; /* 1 */
-    display: table; /* 2 */
+#todo-list li.editing {
+    padding: 0;
+    border-bottom: 0;
+}
+#todo-list .editing .display,
+#todo-list .edit {
+    display: none;
+}
+#todo-list .editing .edit {
+    display: block;
+}
+#todo-list .editing input {
+    width: 444px;
+    font-size: 24px;
+    font-family: inherit;
+    margin: 0;
+    line-height: 1.6em;
+    border: 0;
+    outline: none;
+    padding: 10px 7px 0px 27px;
+    border: 1px solid #999999;
+    -moz-box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+    -webkit-box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+    -o-box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+}
+#todo-list .check {
+    position: relative;
+    top: 9px;
+    margin: 0 10px 0 7px;
+    float: left;
+}
+#todo-list .done .todo-content {
+    text-decoration: line-through;
+    color: #777777;
+}
+#todo-list .todo-destroy {
+    position: absolute;
+    right: 5px;
+    top: 14px;
+    display: none;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    background: url(../img/destroy.png) no-repeat 0 0;
+}
+#todo-list li:hover .todo-destroy {
+    display: block;
+}
+#todo-list .todo-destroy:hover {
+    background-position: 0 -20px;
 }
 
-.clearfix:after {
-    clear: both;
-}
-
-/*
- * For IE 6/7 only
- * Include this rule to trigger hasLayout and contain floats.
- */
-
-.clearfix {
+#todo-stats {
     *zoom: 1;
+    margin-top: 10px;
+    color: #777777;
+}
+#todo-stats:after {
+    content: "\0020";
+    display: block;
+    height: 0;
+    clear: both;
+    overflow: hidden;
+    visibility: hidden;
+}
+#todo-stats .todo-count {
+    float: left;
+}
+#todo-stats .todo-count .number {
+    font-weight: bold;
+    color: #333333;
+}
+#todo-stats .todo-clear {
+    float: right;
+}
+#todo-stats .todo-clear a {
+    color: #777777;
+    font-size: 12px;
+}
+#todo-stats .todo-clear a:visited {
+    color: #777777;
+}
+#todo-stats .todo-clear a:hover {
+    color: #336699;
 }
 
-/* ==========================================================================
-   EXAMPLE Media Queries for Responsive Design.
-   Theses examples override the primary ('mobile first') styles.
-   Modify as content requires.
-   ========================================================================== */
-
-@media only screen and (min-width: 35em) {
-    /* Style adjustments for viewports that meet the condition */
+#instructions {
+    width: 520px;
+    margin: 10px auto;
+    color: #777777;
+    text-shadow: rgba(255, 255, 255, 0.8) 0 1px 0;
+    text-align: center;
+}
+#instructions a {
+    color: #336699;
 }
 
-@media print,
-       (-o-min-device-pixel-ratio: 5/4),
-       (-webkit-min-device-pixel-ratio: 1.25),
-       (min-resolution: 120dpi) {
-    /* Style adjustments for high resolution devices */
+#credits {
+    width: 520px;
+    margin: 30px auto;
+    color: #999;
+    text-shadow: rgba(255, 255, 255, 0.8) 0 1px 0;
+    text-align: center;
+}
+#credits a {
+    color: #888;
 }
 
-/* ==========================================================================
-   Print styles.
-   Inlined to avoid required HTTP connection: h5bp.com/r
-   ========================================================================== */
 
-@media print {
-    * {
-        background: transparent !important;
-        color: #000 !important; /* Black prints faster: h5bp.com/s */
-        box-shadow: none !important;
-        text-shadow: none !important;
-    }
-
-    a,
-    a:visited {
-        text-decoration: underline;
-    }
-
-    a[href]:after {
-        content: " (" attr(href) ")";
-    }
-
-    abbr[title]:after {
-        content: " (" attr(title) ")";
-    }
-
-    /*
-     * Don't show links for images, or javascript/internal links
-     */
-
-    .ir a:after,
-    a[href^="javascript:"]:after,
-    a[href^="#"]:after {
-        content: "";
-    }
-
-    pre,
-    blockquote {
-        border: 1px solid #999;
-        page-break-inside: avoid;
-    }
-
-    thead {
-        display: table-header-group; /* h5bp.com/t */
-    }
-
-    tr,
-    img {
-        page-break-inside: avoid;
-    }
-
-    img {
-        max-width: 100% !important;
-    }
-
-    @page {
-        margin: 0.5cm;
-    }
-
-    p,
-    h2,
-    h3 {
-        orphans: 3;
-        widows: 3;
-    }
-
-    h2,
-    h3 {
-        page-break-after: avoid;
-    }
+/*
+*  François 'cahnory' Germain
+*/
+.ui-tooltip, .ui-tooltip-top, .ui-tooltip-right, .ui-tooltip-bottom, .ui-tooltip-left {
+    color:#ffffff;
+    cursor:normal;
+    display:-moz-inline-stack;
+    display:inline-block;
+    font-size:12px;
+    font-family:arial;
+    padding:.5em 1em;
+    position:relative;
+    text-align:center;
+    text-shadow:0 -1px 1px #111111;
+    -webkit-border-top-left-radius:4px ;
+    -webkit-border-top-right-radius:4px ;
+    -webkit-border-bottom-right-radius:4px ;
+    -webkit-border-bottom-left-radius:4px ;
+    -khtml-border-top-left-radius:4px ;
+    -khtml-border-top-right-radius:4px ;
+    -khtml-border-bottom-right-radius:4px ;
+    -khtml-border-bottom-left-radius:4px ;
+    -moz-border-radius-topleft:4px ;
+    -moz-border-radius-topright:4px ;
+    -moz-border-radius-bottomright:4px ;
+    -moz-border-radius-bottomleft:4px ;
+    border-top-left-radius:4px ;
+    border-top-right-radius:4px ;
+    border-bottom-right-radius:4px ;
+    border-bottom-left-radius:4px ;
+    -o-box-shadow:0 1px 2px #000000, inset 0 0 0 1px #222222, inset 0 2px #666666, inset 0 -2px 2px #444444;
+    -moz-box-shadow:0 1px 2px #000000, inset 0 0 0 1px #222222, inset 0 2px #666666, inset 0 -2px 2px #444444;
+    -khtml-box-shadow:0 1px 2px #000000, inset 0 0 0 1px #222222, inset 0 2px #666666, inset 0 -2px 2px #444444;
+    -webkit-box-shadow:0 1px 2px #000000, inset 0 0 0 1px #222222, inset 0 2px #666666, inset 0 -2px 2px #444444;
+    box-shadow:0 1px 2px #000000, inset 0 0 0 1px #222222, inset 0 2px #666666, inset 0 -2px 2px #444444;
+    background-color:#3b3b3b;
+    background-image:-moz-linear-gradient(top,#555555,#222222);
+    background-image:-webkit-gradient(linear,left top,left bottom,color-stop(0,#555555),color-stop(1,#222222));
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorStr=#555555,EndColorStr=#222222);
+    -ms-filter:progid:DXImageTransform.Microsoft.gradient(startColorStr=#555555,EndColorStr=#222222);
 }
+.ui-tooltip:after, .ui-tooltip-top:after, .ui-tooltip-right:after, .ui-tooltip-bottom:after, .ui-tooltip-left:after {
+    content:"\25B8";
+    display:block;
+    font-size:2em;
+    height:0;
+    line-height:0;
+    position:absolute;
+}
+.ui-tooltip:after, .ui-tooltip-bottom:after {
+    color:#2a2a2a;
+    bottom:0;
+    left:1px;
+    text-align:center;
+    text-shadow:1px 0 2px #000000;
+    -o-transform:rotate(90deg);
+    -moz-transform:rotate(90deg);
+    -khtml-transform:rotate(90deg);
+    -webkit-transform:rotate(90deg);
+    width:100%;
+}
+.ui-tooltip-top:after {
+    bottom:auto;
+    color:#4f4f4f;
+    left:-2px;
+    top:0;
+    text-align:center;
+    text-shadow:none;
+    -o-transform:rotate(-90deg);
+    -moz-transform:rotate(-90deg);
+    -khtml-transform:rotate(-90deg);
+    -webkit-transform:rotate(-90deg);
+    width:100%;
+}
+.ui-tooltip-right:after {
+    color:#222222;
+    right:-0.375em;
+    top:50%;
+    margin-top:-.05em;
+    text-shadow:0 1px 2px #000000;
+    -o-transform:rotate(0);
+    -moz-transform:rotate(0);
+    -khtml-transform:rotate(0);
+    -webkit-transform:rotate(0);
+}
+.ui-tooltip-left:after {
+    color:#222222;
+    left:-0.375em;
+    top:50%;
+    margin-top:.1em;
+    text-shadow:0 -1px 2px #000000;
+    -o-transform:rotate(180deg);
+    -moz-transform:rotate(180deg);
+    -khtml-transform:rotate(180deg);
+    -webkit-transform:rotate(180deg);
+}
+
+
+
+/*the following changes require some cleanup and integration with the above.**/
+
+/* line 9 */
+
+
+/* line 17 */
+#todoapp {
+    background: white;
+    -moz-box-shadow: rgba(0, 0, 0, 0.2) 0 2px 6px 0;
+    -webkit-box-shadow: rgba(0, 0, 0, 0.2) 0 2px 6px 0;
+    -o-box-shadow: rgba(0, 0, 0, 0.2) 0 2px 6px 0;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 2px 6px 0;
+    -moz-border-radius-bottomleft: 5px;
+    -webkit-border-bottom-left-radius: 5px;
+    -o-border-bottom-left-radius: 5px;
+    -ms-border-bottom-left-radius: 5px;
+    -khtml-border-bottom-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    -moz-border-radius-bottomright: 5px;
+    -webkit-border-bottom-right-radius: 5px;
+    -o-border-bottom-right-radius: 5px;
+    -ms-border-bottom-right-radius: 5px;
+    -khtml-border-bottom-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+/* line 24 */
+
+
+/* line 32 */
+#todoapp .content #create-todo {
+    position: relative;
+}
+/* line 34 */
+#todoapp .content #create-todo input {
+    font-size: 24px;
+    font-family: inherit;
+    line-height: 1.4em;
+    border: 0;
+    outline: none;
+    padding: 6px;
+    border: 1px solid #999999;
+    -moz-box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+    -webkit-box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+    -o-box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+}
+
+/* line 47 */
+#todoapp .content #create-todo span {
+    position: absolute;
+    z-index: 999;
+    width: 170px;
+    left: 50%;
+    margin-left: -85px;
+    opacity: 0;
+}
+/* line 55 */
+#todoapp .content ul#todo-list {
+    margin-top: 10px;
+}
+/* line 57 */
+#todoapp .content ul#todo-list li {
+    padding: 15px 20px 15px 0;
+    position: relative;
+    font-size: 24px;
+    border-bottom: 1px solid #cccccc;
+    *zoom: 1;
+    cursor: move;
+}
+/* line 22, /opt/ree/lib/ruby/gems/1.8/gems/compass-0.10.5/frameworks/compass/stylesheets/compass/utilities/general/_clearfix.scss */
+#todoapp .content ul#todo-list li:after {
+    content: "\0020";
+    display: block;
+    height: 0;
+    clear: both;
+    overflow: hidden;
+    visibility: hidden;
+}
+/* line 64 */
+#todoapp .content ul#todo-list li.editing {
+    padding: 0;
+    border-bottom: 0;
+}
+/* line 67 */
+#todoapp .content ul#todo-list li.editing .todo-input {
+    display: block;
+    width: 466px;
+    font-size: 24px;
+    font-family: inherit;
+    line-height: 1.4em;
+    border: 0;
+    outline: none;
+    padding: 6px;
+    border: 1px solid #999999;
+    -moz-box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+    -webkit-box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+    -o-box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 1px 2px 0 inset;
+}
+/* line 79 */
+#todoapp .content ul#todo-list li.editing .todo-content {
+    display: none;
+}
+/* line 81 */
+#todoapp .content ul#todo-list li.editing .todo-check {
+    display: none;
+}
+/* line 83 */
+#todoapp .content ul#todo-list li.editing .todo-destroy {
+    display: none !important;
+}
+/* line 85 */
+#todoapp .content ul#todo-list li .todo-input {
+    display: none;
+}
+/* line 87 */
+#todoapp .content ul#todo-list li .todo-check {
+    position: relative;
+    top: 6px;
+    margin: 0 10px 0 7px;
+    float: left;
+}
+/* line 93 */
+#todoapp .content ul#todo-list li.done .todo-content {
+    text-decoration: line-through;
+    color: #777777;
+}
+/* line 96 */
+#todoapp .content ul#todo-list li .todo-destroy {
+    position: absolute;
+    right: 0px;
+    top: 16px;
+    display: none;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+}
+/* line 106 */
+#todoapp .content ul#todo-list li:hover .todo-destroy {
+    display: block;
+}
+/* line 109 */
+#todoapp #todo-stats {
+    *zoom: 1;
+    margin-top: 10px;
+    color: #555555;
+    -moz-border-radius-bottomleft: 5px;
+    -webkit-border-bottom-left-radius: 5px;
+    -o-border-bottom-left-radius: 5px;
+    -ms-border-bottom-left-radius: 5px;
+    -khtml-border-bottom-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    -moz-border-radius-bottomright: 5px;
+    -webkit-border-bottom-right-radius: 5px;
+    -o-border-bottom-right-radius: 5px;
+    -ms-border-bottom-right-radius: 5px;
+    -khtml-border-bottom-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    background: #f4fce8;
+    border-top: 1px solid #ededed;
+    padding: 0 20px;
+    line-height: 36px;
+}
+/* line 22, /opt/ree/lib/ruby/gems/1.8/gems/compass-0.10.5/frameworks/compass/stylesheets/compass/utilities/general/_clearfix.scss */
+#todoapp #todo-stats:after {
+    content: "\0020";
+    display: block;
+    height: 0;
+    clear: both;
+    overflow: hidden;
+    visibility: hidden;
+}
+/* line 118 */
+#todoapp #todo-stats .todo-count {
+    float: left;
+}
+/* line 120 */
+#todoapp #todo-stats .todo-count .number {
+    font-weight: bold;
+    color: #555555;
+}
+/* line 123 */
+#todoapp #todo-stats .todo-clear {
+    float: right;
+}
+/* line 125 */
+#todoapp #todo-stats .todo-clear a {
+    display: block;
+    line-height: 20px;
+    text-decoration: none;
+    -moz-border-radius: 12px;
+    -webkit-border-radius: 12px;
+    -o-border-radius: 12px;
+    -ms-border-radius: 12px;
+    -khtml-border-radius: 12px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.1);
+    color: #555555;
+    font-size: 11px;
+    margin-top: 8px;
+    padding: 0 10px 1px;
+    -moz-box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 0 0;
+    -webkit-box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 0 0;
+    -o-box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 0 0;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 0 0;
+}
+/* line 136 */
+#todoapp #todo-stats .todo-clear a:hover {
+    background: rgba(0, 0, 0, 0.15);
+    -moz-box-shadow: rgba(0, 0, 0, 0.3) 0 -1px 0 0;
+    -webkit-box-shadow: rgba(0, 0, 0, 0.3) 0 -1px 0 0;
+    -o-box-shadow: rgba(0, 0, 0, 0.3) 0 -1px 0 0;
+    box-shadow: rgba(0, 0, 0, 0.3) 0 -1px 0 0;
+}
+/* line 139 */
+#todoapp #todo-stats .todo-clear a:active {
+    position: relative;
+    top: 1px;
+}
+

@@ -1,11 +1,7 @@
 (function() {
 
-  require(['backbone', 'AppRouter'], function(Backbone, AppRouter) {
-    return $(function() {
-      var AR;
-      AR = new AppRouter;
-      return Backbone.history.start();
-    });
+  require(['backbone', 'TodoView'], function(Backbone, TodoView) {
+    return new TodoView();
   });
 
 }).call(this);

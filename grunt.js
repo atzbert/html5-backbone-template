@@ -46,9 +46,12 @@ module.exports = function (grunt) {
                         "jquery":"../lib/jquery-1.9.0.min",
                         "underscore":"../lib/underscore",
                         "backbone":"../lib/backbone",
-                        "ListView":"../js/views/ListView",
-                        "ListItemView":"../js/views/ListItemView",
-                        "ListItem":"../js/models/ListItem"
+                        "text":"../lib/text",
+                        "localstorage":"../lib/localstorage",
+                        "Todos":"../js/collections/Todos",
+                        "TodoView":"../js/views/TodoView",
+                        "TodoItemView":"../js/views/TodoItemView",
+                        "TodoModel":"../js/models/TodoModel"
 
                     }
                 }

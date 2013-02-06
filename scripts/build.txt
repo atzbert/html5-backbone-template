@@ -4,8 +4,12 @@ page.js
 underscore.js
 jquery.js
 backbone.js
-models/ListItem.js
-views/ListItemView.js
-views/ListView.js
-AppRouter.js
+localstorage.js
+models/TodoModel.js
+collections/Todos.js
+text.js
+text!../templates/todos.html
+views/TodoItemView.js
+text!../templates/stats.html
+views/TodoView.js
 page.js

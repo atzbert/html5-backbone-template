@@ -2703,23 +2703,133 @@ define("backbone", ["underscore","jquery"], (function (global) {
     };
 }(this)));
 
+define('localstorage',['underscore', 'backbone'], function(_, Backbone){
+
+// A simple module to replace `Backbone.sync` with *localStorage*-based
+// persistence. Models are given GUIDS, and saved into a JSON object. Simple
+// as that.
+
+// Generate four random hex digits.
+function S4() {
+   return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+};
+
+// Generate a pseudo-GUID by concatenating random hexadecimal.
+function guid() {
+   return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+};
+
+// Our Store is represented by a single JS object in *localStorage*. Create it
+// with a meaningful name, like the name you'd give a table.
+var Store = function(name) {
+  this.name = name;
+  var store = localStorage.getItem(this.name);
+  this.data = (store && JSON.parse(store)) || {};
+};
+
+_.extend(Store.prototype, {
+
+  // Save the current state of the **Store** to *localStorage*.
+  save: function() {
+    localStorage.setItem(this.name, JSON.stringify(this.data));
+  },
+
+  // Add a model, giving it a (hopefully)-unique GUID, if it doesn't already
+  // have an id of it's own.
+  create: function(model) {
+    if (!model.id) model.id = model.attributes.id = guid();
+    this.data[model.id] = model;
+    this.save();
+    return model;
+  },
+
+  // Update a model by replacing its copy in `this.data`.
+  update: function(model) {
+    this.data[model.id] = model;
+    this.save();
+    return model;
+  },
+
+  // Retrieve a model from `this.data` by id.
+  find: function(model) {
+    return this.data[model.id];
+  },
+
+  // Return the array of all models currently in storage.
+  findAll: function() {
+    return _.values(this.data);
+  },
+
+  // Delete a model from `this.data`, returning it.
+  destroy: function(model) {
+    delete this.data[model.id];
+    this.save();
+    return model;
+  }
+
+});
+
+// Override `Backbone.sync` to use delegate to the model or collection's
+// *localStorage* property, which should be an instance of `Store`.
+Backbone.sync = function(method, model, options) {
+
+  var resp;
+  var store = model.localStorage || model.collection.localStorage;
+
+  switch (method) {
+    case "read":    resp = model.id ? store.find(model) : store.findAll(); break;
+    case "create":  resp = store.create(model);                            break;
+    case "update":  resp = store.update(model);                            break;
+    case "delete":  resp = store.destroy(model);                           break;
+  }
+
+  if (resp) {
+    options.success(resp);
+  } else {
+    options.error("Record not found");
+  }
+};
+return Store;
+});
+
 (function() {
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define('ListItem',['backbone'], function(Backbone) {
-    var ListItem;
-    return ListItem = (function(_super) {
+  define('TodoModel',['underscore', 'backbone'], function(_, Backbone) {
+    var TodoModel,
+      _this = this;
+    return TodoModel = (function(_super) {
 
-      __extends(ListItem, _super);
+      __extends(TodoModel, _super);
 
-      function ListItem() {
-        return ListItem.__super__.constructor.apply(this, arguments);
+      function TodoModel() {
+        return TodoModel.__super__.constructor.apply(this, arguments);
       }
 
-      return ListItem;
+      return TodoModel;
 
     })(Backbone.Model);
+    return {
+      defaults: {
+        content: "empty todo...",
+        done: false
+      },
+      initialize: function() {
+        if (!this.get("content")) {
+          return this.set("content", this.defaults.content);
+        }
+      },
+      toggle: function() {
+        return this.save({
+          done: !this.get("done")
+        });
+      },
+      clear: function() {
+        _this.destroy();
+        return _this.view.remove();
+      }
+    };
   });
 
 }).call(this);
@@ -2728,87 +2838,607 @@ define("backbone", ["underscore","jquery"], (function (global) {
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define('ListItemView',['backbone', 'ListItem'], function(Backbone, ListItem) {
-    var ListItemView;
-    return ListItemView = (function(_super) {
+  define('Todos',['underscore', 'backbone', 'localstorage', 'TodoModel'], function(_, Backbone, Store, TodoModel) {
+    var Todos;
+    return Todos = (function(_super) {
 
-      __extends(ListItemView, _super);
+      __extends(Todos, _super);
 
-      function ListItemView() {
-        return ListItemView.__super__.constructor.apply(this, arguments);
+      function Todos() {
+        return Todos.__super__.constructor.apply(this, arguments);
       }
 
-      return ListItemView;
+      Todos.prototype.model = TodoModel;
 
-    })(Backbone.View);
+      Todos.prototype.localStorage = new Store("todos");
+
+      Todos.prototype.done = function() {
+        var _this = this;
+        return this.filter(function(todo) {
+          return todo.get('done');
+        });
+      };
+
+      Todos.prototype.remaining = function() {
+        return this.without.apply(this, this.done());
+      };
+
+      Todos.prototype.nextOrder = function() {
+        if (!this.length) {
+          return 1;
+        } else {
+          return this.last().get('order') + 1;
+        }
+      };
+
+      Todos.prototype.comparator = function(todo) {
+        return todo.get('order');
+      };
+
+      return Todos;
+
+    })(Backbone.Collection);
   });
 
 }).call(this);
 
-(function() {
-  var __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+/**
+ * @license RequireJS text 2.0.5 Copyright (c) 2010-2012, The Dojo Foundation All Rights Reserved.
+ * Available via the MIT or new BSD license.
+ * see: http://github.com/requirejs/text for details
+ */
+/*jslint regexp: true */
+/*global require: false, XMLHttpRequest: false, ActiveXObject: false,
+  define: false, window: false, process: false, Packages: false,
+  java: false, location: false */
 
-  define('ListView',['backbone', 'ListItemView'], function(Backbone, ListItemView) {
-    var ListView;
-    return ListView = (function(_super) {
+define('text',['module'], function (module) {
+    
 
-      __extends(ListView, _super);
+    var text, fs,
+        progIds = ['Msxml2.XMLHTTP', 'Microsoft.XMLHTTP', 'Msxml2.XMLHTTP.4.0'],
+        xmlRegExp = /^\s*<\?xml(\s)+version=[\'\"](\d)*.(\d)*[\'\"](\s)*\?>/im,
+        bodyRegExp = /<body[^>]*>\s*([\s\S]+)\s*<\/body>/im,
+        hasLocation = typeof location !== 'undefined' && location.href,
+        defaultProtocol = hasLocation && location.protocol && location.protocol.replace(/\:/, ''),
+        defaultHostName = hasLocation && location.hostname,
+        defaultPort = hasLocation && (location.port || undefined),
+        buildMap = [],
+        masterConfig = (module.config && module.config()) || {};
 
-      function ListView() {
-        return ListView.__super__.constructor.apply(this, arguments);
-      }
+    text = {
+        version: '2.0.5',
 
-      return ListView;
+        strip: function (content) {
+            //Strips <?xml ...?> declarations so that external SVG and XML
+            //documents can be added to a document without worry. Also, if the string
+            //is an HTML document, only the part inside the body tag is returned.
+            if (content) {
+                content = content.replace(xmlRegExp, "");
+                var matches = content.match(bodyRegExp);
+                if (matches) {
+                    content = matches[1];
+                }
+            } else {
+                content = "";
+            }
+            return content;
+        },
 
-    })(Backbone.View);
-  });
+        jsEscape: function (content) {
+            return content.replace(/(['\\])/g, '\\$1')
+                .replace(/[\f]/g, "\\f")
+                .replace(/[\b]/g, "\\b")
+                .replace(/[\n]/g, "\\n")
+                .replace(/[\t]/g, "\\t")
+                .replace(/[\r]/g, "\\r")
+                .replace(/[\u2028]/g, "\\u2028")
+                .replace(/[\u2029]/g, "\\u2029");
+        },
 
-}).call(this);
+        createXhr: masterConfig.createXhr || function () {
+            //Would love to dump the ActiveX crap in here. Need IE 6 to die first.
+            var xhr, i, progId;
+            if (typeof XMLHttpRequest !== "undefined") {
+                return new XMLHttpRequest();
+            } else if (typeof ActiveXObject !== "undefined") {
+                for (i = 0; i < 3; i += 1) {
+                    progId = progIds[i];
+                    try {
+                        xhr = new ActiveXObject(progId);
+                    } catch (e) {}
+
+                    if (xhr) {
+                        progIds = [progId];  // so faster next time
+                        break;
+                    }
+                }
+            }
+
+            return xhr;
+        },
+
+        /**
+         * Parses a resource name into its component parts. Resource names
+         * look like: module/name.ext!strip, where the !strip part is
+         * optional.
+         * @param {String} name the resource name
+         * @returns {Object} with properties "moduleName", "ext" and "strip"
+         * where strip is a boolean.
+         */
+        parseName: function (name) {
+            var modName, ext, temp,
+                strip = false,
+                index = name.indexOf("."),
+                isRelative = name.indexOf('./') === 0 ||
+                             name.indexOf('../') === 0;
+
+            if (index !== -1 && (!isRelative || index > 1)) {
+                modName = name.substring(0, index);
+                ext = name.substring(index + 1, name.length);
+            } else {
+                modName = name;
+            }
+
+            temp = ext || modName;
+            index = temp.indexOf("!");
+            if (index !== -1) {
+                //Pull off the strip arg.
+                strip = temp.substring(index + 1) === "strip";
+                temp = temp.substring(0, index);
+                if (ext) {
+                    ext = temp;
+                } else {
+                    modName = temp;
+                }
+            }
+
+            return {
+                moduleName: modName,
+                ext: ext,
+                strip: strip
+            };
+        },
+
+        xdRegExp: /^((\w+)\:)?\/\/([^\/\\]+)/,
+
+        /**
+         * Is an URL on another domain. Only works for browser use, returns
+         * false in non-browser environments. Only used to know if an
+         * optimized .js version of a text resource should be loaded
+         * instead.
+         * @param {String} url
+         * @returns Boolean
+         */
+        useXhr: function (url, protocol, hostname, port) {
+            var uProtocol, uHostName, uPort,
+                match = text.xdRegExp.exec(url);
+            if (!match) {
+                return true;
+            }
+            uProtocol = match[2];
+            uHostName = match[3];
+
+            uHostName = uHostName.split(':');
+            uPort = uHostName[1];
+            uHostName = uHostName[0];
+
+            return (!uProtocol || uProtocol === protocol) &&
+                   (!uHostName || uHostName.toLowerCase() === hostname.toLowerCase()) &&
+                   ((!uPort && !uHostName) || uPort === port);
+        },
+
+        finishLoad: function (name, strip, content, onLoad) {
+            content = strip ? text.strip(content) : content;
+            if (masterConfig.isBuild) {
+                buildMap[name] = content;
+            }
+            onLoad(content);
+        },
+
+        load: function (name, req, onLoad, config) {
+            //Name has format: some.module.filext!strip
+            //The strip part is optional.
+            //if strip is present, then that means only get the string contents
+            //inside a body tag in an HTML string. For XML/SVG content it means
+            //removing the <?xml ...?> declarations so the content can be inserted
+            //into the current doc without problems.
+
+            // Do not bother with the work if a build and text will
+            // not be inlined.
+            if (config.isBuild && !config.inlineText) {
+                onLoad();
+                return;
+            }
+
+            masterConfig.isBuild = config.isBuild;
+
+            var parsed = text.parseName(name),
+                nonStripName = parsed.moduleName +
+                    (parsed.ext ? '.' + parsed.ext : ''),
+                url = req.toUrl(nonStripName),
+                useXhr = (masterConfig.useXhr) ||
+                         text.useXhr;
+
+            //Load the text. Use XHR if possible and in a browser.
+            if (!hasLocation || useXhr(url, defaultProtocol, defaultHostName, defaultPort)) {
+                text.get(url, function (content) {
+                    text.finishLoad(name, parsed.strip, content, onLoad);
+                }, function (err) {
+                    if (onLoad.error) {
+                        onLoad.error(err);
+                    }
+                });
+            } else {
+                //Need to fetch the resource across domains. Assume
+                //the resource has been optimized into a JS module. Fetch
+                //by the module name + extension, but do not include the
+                //!strip part to avoid file system issues.
+                req([nonStripName], function (content) {
+                    text.finishLoad(parsed.moduleName + '.' + parsed.ext,
+                                    parsed.strip, content, onLoad);
+                });
+            }
+        },
+
+        write: function (pluginName, moduleName, write, config) {
+            if (buildMap.hasOwnProperty(moduleName)) {
+                var content = text.jsEscape(buildMap[moduleName]);
+                write.asModule(pluginName + "!" + moduleName,
+                               "define(function () { return '" +
+                                   content +
+                               "';});\n");
+            }
+        },
+
+        writeFile: function (pluginName, moduleName, req, write, config) {
+            var parsed = text.parseName(moduleName),
+                extPart = parsed.ext ? '.' + parsed.ext : '',
+                nonStripName = parsed.moduleName + extPart,
+                //Use a '.js' file name so that it indicates it is a
+                //script that can be loaded across domains.
+                fileName = req.toUrl(parsed.moduleName + extPart) + '.js';
+
+            //Leverage own load() method to load plugin value, but only
+            //write out values that do not have the strip argument,
+            //to avoid any potential issues with ! in file names.
+            text.load(nonStripName, req, function (value) {
+                //Use own write() method to construct full module value.
+                //But need to create shell that translates writeFile's
+                //write() to the right interface.
+                var textWrite = function (contents) {
+                    return write(fileName, contents);
+                };
+                textWrite.asModule = function (moduleName, contents) {
+                    return write.asModule(moduleName, fileName, contents);
+                };
+
+                text.write(pluginName, nonStripName, textWrite, config);
+            }, config);
+        }
+    };
+
+    if (masterConfig.env === 'node' || (!masterConfig.env &&
+            typeof process !== "undefined" &&
+            process.versions &&
+            !!process.versions.node)) {
+        //Using special require.nodeRequire, something added by r.js.
+        fs = require.nodeRequire('fs');
+
+        text.get = function (url, callback) {
+            var file = fs.readFileSync(url, 'utf8');
+            //Remove BOM (Byte Mark Order) from utf8 files if it is there.
+            if (file.indexOf('\uFEFF') === 0) {
+                file = file.substring(1);
+            }
+            callback(file);
+        };
+    } else if (masterConfig.env === 'xhr' || (!masterConfig.env &&
+            text.createXhr())) {
+        text.get = function (url, callback, errback, headers) {
+            var xhr = text.createXhr(), header;
+            xhr.open('GET', url, true);
+
+            //Allow plugins direct access to xhr headers
+            if (headers) {
+                for (header in headers) {
+                    if (headers.hasOwnProperty(header)) {
+                        xhr.setRequestHeader(header.toLowerCase(), headers[header]);
+                    }
+                }
+            }
+
+            //Allow overrides specified in config
+            if (masterConfig.onXhr) {
+                masterConfig.onXhr(xhr, url);
+            }
+
+            xhr.onreadystatechange = function (evt) {
+                var status, err;
+                //Do not explicitly handle errors, those should be
+                //visible via console output in the browser.
+                if (xhr.readyState === 4) {
+                    status = xhr.status;
+                    if (status > 399 && status < 600) {
+                        //An http 4xx or 5xx error. Signal an error.
+                        err = new Error(url + ' HTTP status: ' + status);
+                        err.xhr = xhr;
+                        errback(err);
+                    } else {
+                        callback(xhr.responseText);
+                    }
+                }
+            };
+            xhr.send(null);
+        };
+    } else if (masterConfig.env === 'rhino' || (!masterConfig.env &&
+            typeof Packages !== 'undefined' && typeof java !== 'undefined')) {
+        //Why Java, why is this so awkward?
+        text.get = function (url, callback) {
+            var stringBuffer, line,
+                encoding = "utf-8",
+                file = new java.io.File(url),
+                lineSeparator = java.lang.System.getProperty("line.separator"),
+                input = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(file), encoding)),
+                content = '';
+            try {
+                stringBuffer = new java.lang.StringBuffer();
+                line = input.readLine();
+
+                // Byte Order Mark (BOM) - The Unicode Standard, version 3.0, page 324
+                // http://www.unicode.org/faq/utf_bom.html
+
+                // Note that when we use utf-8, the BOM should appear as "EF BB BF", but it doesn't due to this bug in the JDK:
+                // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4508058
+                if (line && line.length() && line.charAt(0) === 0xfeff) {
+                    // Eat the BOM, since we've already found the encoding on this file,
+                    // and we plan to concatenating this buffer with others; the BOM should
+                    // only appear at the top of a file.
+                    line = line.substring(1);
+                }
+
+                stringBuffer.append(line);
+
+                while ((line = input.readLine()) !== null) {
+                    stringBuffer.append(lineSeparator);
+                    stringBuffer.append(line);
+                }
+                //Make sure we return a JavaScript string and not a Java string.
+                content = String(stringBuffer.toString()); //String
+            } finally {
+                input.close();
+            }
+            callback(content);
+        };
+    }
+
+    return text;
+});
+
+define('text!../templates/todos.html',[],function () { return '<div class="todo <%= done ? \'done\' : \'\' %>">\n  <div class="display">\n    <input class="check" type="checkbox" <%= done ? \'checked="checked"\' : \'\' %> />\n    <div class="todo-content"></div>\n    <span class="todo-destroy"></span>\n  </div>\n  <div class="edit">\n    <input class="todo-input" type="text" value="" />\n  </div>\n</div>\n';});
 
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define('AppRouter',['backbone', 'ListView'], function(Backbone, ListView) {
-    var AppRouter;
-    return AppRouter = (function(_super) {
+  define('TodoItemView',['jquery', 'underscore', 'backbone', 'text!../templates/todos.html'], function($, _, Backbone, todosTemplate) {
+    var TodoView;
+    return TodoView = (function(_super) {
 
-      __extends(AppRouter, _super);
+      __extends(TodoView, _super);
 
-      function AppRouter() {
-        this.landing = __bind(this.landing, this);
-        return AppRouter.__super__.constructor.apply(this, arguments);
+      function TodoView() {
+        this.clear = __bind(this.clear, this);
+
+        this.remove = __bind(this.remove, this);
+
+        this.updateOnEnter = __bind(this.updateOnEnter, this);
+
+        this.close = __bind(this.close, this);
+
+        this.edit = __bind(this.edit, this);
+
+        this.toggleDone = __bind(this.toggleDone, this);
+
+        this.setContent = __bind(this.setContent, this);
+
+        this.render = __bind(this.render, this);
+
+        this.initialize = __bind(this.initialize, this);
+        return TodoView.__super__.constructor.apply(this, arguments);
       }
 
-      AppRouter.prototype.routes = {
-        "*actions": "landing"
+      TodoView.prototype.tagName = "li";
+
+      TodoView.prototype.template = _.template(todosTemplate);
+
+      TodoView.prototype.events = {
+        "click .check": "toggleDone",
+        "dblclick div.todo-content": "edit",
+        "click span.todo-destroy": "clear",
+        "keypress .todo-input": "updateOnEnter"
       };
 
-      AppRouter.prototype.initialize = function() {
-        return this.listView = new ListView;
+      TodoView.prototype.initialize = function() {
+        this.model.bind('change', this.render);
+        return this.model.view = this;
       };
 
-      AppRouter.prototype.landing = function() {
-        return this.listView.render();
+      TodoView.prototype.render = function() {
+        $(this.el).html(this.template(this.model.toJSON()));
+        this.setContent();
+        return this;
       };
 
-      return AppRouter;
+      TodoView.prototype.setContent = function() {
+        var content;
+        content = this.model.get('content');
+        this.$('.todo-content').text(content);
+        this.input = this.$('.todo-input');
+        this.input.bind('blur', this.close);
+        return this.input.val(content);
+      };
 
-    })(Backbone.Router);
+      TodoView.prototype.toggleDone = function() {
+        return this.model.toggle();
+      };
+
+      TodoView.prototype.edit = function() {
+        $(this.el).addClass("editing");
+        return this.input.focus();
+      };
+
+      TodoView.prototype.close = function() {
+        this.model.save({
+          content: this.input.val()
+        });
+        return $(this.el).removeClass("editing");
+      };
+
+      TodoView.prototype.updateOnEnter = function(e) {
+        if (e.keyCode === 13) {
+          return this.close();
+        }
+      };
+
+      TodoView.prototype.remove = function() {
+        return $(this.el).remove();
+      };
+
+      TodoView.prototype.clear = function() {
+        return this.model.clear();
+      };
+
+      return TodoView;
+
+    })(Backbone.View);
+  });
+
+}).call(this);
+
+define('text!../templates/stats.html',[],function () { return ' <% if (total) { %>\n        <span class="todo-count">\n          <span class="number"><%= remaining %></span>\n          <span class="word"><%= remaining == 1 ? \'item\' : \'items\' %></span> left.\n        </span>\n      <% } %>\n      <% if (done) { %>\n        <span class="todo-clear">\n          <a href="#">\n            Clear <span class="number-done"><%= done %></span>\n            completed <span class="word-done"><%= done == 1 ? \'item\' : \'items\' %></span>\n          </a>\n        </span>\n      <% } %>\n';});
+
+(function() {
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  define('TodoView',['jquery', 'underscore', 'backbone', 'Todos', 'TodoItemView', 'text!../templates/stats.html'], function($, _, Backbone, Todos, TodoItemView, statsTemplate) {
+    var AppView;
+    return AppView = (function(_super) {
+
+      __extends(AppView, _super);
+
+      function AppView() {
+        this.showTooltip = __bind(this.showTooltip, this);
+
+        this.clearCompleted = __bind(this.clearCompleted, this);
+
+        this.createOnEnter = __bind(this.createOnEnter, this);
+
+        this.newAttributes = __bind(this.newAttributes, this);
+
+        this.addAll = __bind(this.addAll, this);
+
+        this.addOne = __bind(this.addOne, this);
+
+        this.render = __bind(this.render, this);
+
+        this.initialize = __bind(this.initialize, this);
+        return AppView.__super__.constructor.apply(this, arguments);
+      }
+
+      AppView.prototype.el = $("#todoapp");
+
+      AppView.prototype.statsTemplate = _.template(statsTemplate);
+
+      AppView.prototype.events = {
+        "keypress #new-todo": "createOnEnter",
+        "keyup #new-todo": "showTooltip",
+        "click .todo-clear a": "clearCompleted"
+      };
+
+      AppView.prototype.initialize = function() {
+        this.input = this.$("#new-todo");
+        Todos.bind('add', this.addOne);
+        Todos.bind('reset', this.addAll);
+        Todos.bind('all', this.render);
+        return Todos.fetch();
+      };
+
+      AppView.prototype.render = function() {
+        var done;
+        done = Todos.done().length;
+        return this.$('#todo-stats').html(this.statsTemplate({
+          total: Todos.length,
+          done: Todos.done().length,
+          remaining: Todos.remaining().length
+        }));
+      };
+
+      AppView.prototype.addOne = function(todo) {
+        var view;
+        view = new TodoItemView({
+          model: todo
+        });
+        return this.$("#todo-list").append(view.render().el);
+      };
+
+      AppView.prototype.addAll = function() {
+        return Todos.each(this.addOne);
+      };
+
+      AppView.prototype.newAttributes = function() {
+        return {
+          content: this.input.val(),
+          order: Todos.nextOrder(),
+          done: false
+        };
+      };
+
+      AppView.prototype.createOnEnter = function(e) {
+        if (e.keyCode === 13) {
+          Todos.create(this.newAttributes());
+          return this.input.val('');
+        }
+      };
+
+      AppView.prototype.clearCompleted = function() {
+        _.each(Todos.done(), function(todo) {
+          return todo.clear();
+        });
+        return false;
+      };
+
+      AppView.prototype.showTooltip = function(e) {
+        var show, tooltip, val;
+        tooltip = this.$(".ui-tooltip-top");
+        val = this.input.val();
+        tooltip.fadeOut();
+        if (this.tooltipTimeout) {
+          clearTimeout(this.tooltipTimeout);
+        }
+        if (val === '' || val === this.input.attr('placeholder')) {
+          return;
+        }
+        show = function() {
+          return tooltip.show().fadeIn();
+        };
+        return this.tooltipTimeout = _.delay(show, 1000);
+      };
+
+      return AppView;
+
+    })(Backbone.View);
   });
 
 }).call(this);
 
 (function() {
 
-  require(['backbone', 'AppRouter'], function(Backbone, AppRouter) {
-    return $(function() {
-      var AR;
-      AR = new AppRouter;
-      return Backbone.history.start();
-    });
+  require(['backbone', 'TodoView'], function(Backbone, TodoView) {
+    return new TodoView();
   });
 
 }).call(this);
