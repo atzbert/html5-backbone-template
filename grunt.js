@@ -15,7 +15,7 @@ module.exports = function (grunt) {
         },
 
         watch:{
-            files:'coffee/*.coffee',
+            files:'coffee/**/*.coffee',
             tasks:'coffee'
         },
 
@@ -47,7 +47,7 @@ module.exports = function (grunt) {
                         "underscore":"../lib/underscore",
                         "backbone":"../lib/backbone",
                         "text":"../lib/text",
-                        "localstorage":"../lib/localstorage",
+                        "localstorage":"../lib/backbone.localStorage",
                         "Todos":"../js/collections/Todos",
                         "TodoView":"../js/views/TodoView",
                         "TodoItemView":"../js/views/TodoItemView",

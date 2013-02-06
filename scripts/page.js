@@ -2703,11 +2703,30 @@ define("backbone", ["underscore","jquery"], (function (global) {
     };
 }(this)));
 
-define('localstorage',['underscore', 'backbone'], function(_, Backbone){
-
+/**
+ * Backbone localStorage Adapter
+ * Version 1.1.0
+ *
+ * https://github.com/jeromegn/Backbone.localStorage
+ */
+(function (root, factory) {
+   if (typeof define === "function" && define.amd) {
+      // AMD. Register as an anonymous module.
+      define('localstorage',["underscore","backbone"], function(_, Backbone) {
+        // Use global variables if the locals are undefined.
+        return factory(_ || root._, Backbone || root.Backbone);
+      });
+   } else {
+      // RequireJS isn't being used. Assume underscore and backbone are loaded in <script> tags
+      factory(_, Backbone);
+   }
+}(this, function(_, Backbone) {
 // A simple module to replace `Backbone.sync` with *localStorage*-based
 // persistence. Models are given GUIDS, and saved into a JSON object. Simple
 // as that.
+
+// Hold reference to Underscore.js and Backbone.js in the closure in order
+// to make things work even if they are removed from the global namespace
 
 // Generate four random hex digits.
 function S4() {
@@ -2721,77 +2740,163 @@ function guid() {
 
 // Our Store is represented by a single JS object in *localStorage*. Create it
 // with a meaningful name, like the name you'd give a table.
-var Store = function(name) {
+// window.Store is deprectated, use Backbone.LocalStorage instead
+Backbone.LocalStorage = window.Store = function(name) {
   this.name = name;
-  var store = localStorage.getItem(this.name);
-  this.data = (store && JSON.parse(store)) || {};
+  var store = this.localStorage().getItem(this.name);
+  this.records = (store && store.split(",")) || [];
 };
 
-_.extend(Store.prototype, {
+_.extend(Backbone.LocalStorage.prototype, {
 
   // Save the current state of the **Store** to *localStorage*.
   save: function() {
-    localStorage.setItem(this.name, JSON.stringify(this.data));
+    this.localStorage().setItem(this.name, this.records.join(","));
   },
 
   // Add a model, giving it a (hopefully)-unique GUID, if it doesn't already
   // have an id of it's own.
   create: function(model) {
-    if (!model.id) model.id = model.attributes.id = guid();
-    this.data[model.id] = model;
+    if (!model.id) {
+      model.id = guid();
+      model.set(model.idAttribute, model.id);
+    }
+    this.localStorage().setItem(this.name+"-"+model.id, JSON.stringify(model));
+    this.records.push(model.id.toString());
     this.save();
-    return model;
+    return this.find(model);
   },
 
   // Update a model by replacing its copy in `this.data`.
   update: function(model) {
-    this.data[model.id] = model;
-    this.save();
-    return model;
+    this.localStorage().setItem(this.name+"-"+model.id, JSON.stringify(model));
+    if (!_.include(this.records, model.id.toString()))
+      this.records.push(model.id.toString()); this.save();
+    return this.find(model);
   },
 
   // Retrieve a model from `this.data` by id.
   find: function(model) {
-    return this.data[model.id];
+    return this.jsonData(this.localStorage().getItem(this.name+"-"+model.id));
   },
 
   // Return the array of all models currently in storage.
   findAll: function() {
-    return _.values(this.data);
+    return _(this.records).chain()
+      .map(function(id){
+        return this.jsonData(this.localStorage().getItem(this.name+"-"+id));
+      }, this)
+      .compact()
+      .value();
   },
 
   // Delete a model from `this.data`, returning it.
   destroy: function(model) {
-    delete this.data[model.id];
+    if (model.isNew())
+      return false
+    this.localStorage().removeItem(this.name+"-"+model.id);
+    this.records = _.reject(this.records, function(id){
+      return id === model.id.toString();
+    });
     this.save();
     return model;
+  },
+
+  localStorage: function() {
+    return localStorage;
+  },
+  
+  // fix for "illegal access" error on Android when JSON.parse is passed null
+  jsonData: function (data) {
+      return data && JSON.parse(data);
   }
 
 });
 
-// Override `Backbone.sync` to use delegate to the model or collection's
+// localSync delegate to the model or collection's
 // *localStorage* property, which should be an instance of `Store`.
-Backbone.sync = function(method, model, options) {
-
-  var resp;
+// window.Store.sync and Backbone.localSync is deprectated, use Backbone.LocalStorage.sync instead
+Backbone.LocalStorage.sync = window.Store.sync = Backbone.localSync = function(method, model, options) {
   var store = model.localStorage || model.collection.localStorage;
 
-  switch (method) {
-    case "read":    resp = model.id ? store.find(model) : store.findAll(); break;
-    case "create":  resp = store.create(model);                            break;
-    case "update":  resp = store.update(model);                            break;
-    case "delete":  resp = store.destroy(model);                           break;
+  var resp, errorMessage, syncDfd = $.Deferred && $.Deferred(); //If $ is having Deferred - use it. 
+
+  try {
+
+    switch (method) {
+      case "read":
+        resp = model.id != undefined ? store.find(model) : store.findAll();
+        break;
+      case "create":
+        resp = store.create(model);
+        break;
+      case "update":
+        resp = store.update(model);
+        break;
+      case "delete":
+        resp = store.destroy(model);
+        break;
+    }
+
+  } catch(error) {
+    if (error.code === DOMException.QUOTA_EXCEEDED_ERR && window.localStorage.length === 0)
+      errorMessage = "Private browsing is unsupported";
+    else
+      errorMessage = error.message;
   }
 
   if (resp) {
-    options.success(resp);
-  } else {
-    options.error("Record not found");
-  }
-};
-return Store;
-});
+    model.trigger("sync", model, resp, options);
+    if (options && options.success)
+      if (Backbone.VERSION === "0.9.10") {
+        options.success(model, resp, options);
+      } else {
+        options.success(resp);
+      }
+    if (syncDfd)
+      syncDfd.resolve(resp);
 
+  } else {
+    errorMessage = errorMessage ? errorMessage
+                                : "Record Not Found";
+    
+    model.trigger("error", model, errorMessage, options);
+    if (options && options.error)
+      if (Backbone.VERSION === "0.9.10") {
+        options.error(model, errorMessage, options);
+      } else {
+        options.error(errorMessage);
+      }
+      
+    if (syncDfd)
+      syncDfd.reject(errorMessage);
+  }
+  
+  // add compatibility with $.ajax
+  // always execute callback for success and error
+  if (options && options.complete) options.complete(resp);
+
+  return syncDfd && syncDfd.promise();
+};
+
+Backbone.ajaxSync = Backbone.sync;
+
+Backbone.getSyncMethod = function(model) {
+  if(model.localStorage || (model.collection && model.collection.localStorage)) {
+    return Backbone.localSync;
+  }
+
+  return Backbone.ajaxSync;
+};
+
+// Override 'Backbone.sync' to default to localSync,
+// the original 'Backbone.sync' is still available in 'Backbone.ajaxSync'
+Backbone.sync = function(method, model, options) {
+  return Backbone.getSyncMethod(model).apply(this, [method, model, options]);
+};
+
+return Backbone.LocalStorage;
+}));
 (function() {
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -3223,12 +3328,12 @@ define('text!../templates/todos.html',[],function () { return '<div class="todo 
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   define('TodoItemView',['jquery', 'underscore', 'backbone', 'text!../templates/todos.html'], function($, _, Backbone, todosTemplate) {
-    var TodoView;
-    return TodoView = (function(_super) {
+    var TodoItemView;
+    return TodoItemView = (function(_super) {
 
-      __extends(TodoView, _super);
+      __extends(TodoItemView, _super);
 
-      function TodoView() {
+      function TodoItemView() {
         this.clear = __bind(this.clear, this);
 
         this.remove = __bind(this.remove, this);
@@ -3246,32 +3351,32 @@ define('text!../templates/todos.html',[],function () { return '<div class="todo 
         this.render = __bind(this.render, this);
 
         this.initialize = __bind(this.initialize, this);
-        return TodoView.__super__.constructor.apply(this, arguments);
+        return TodoItemView.__super__.constructor.apply(this, arguments);
       }
 
-      TodoView.prototype.tagName = "li";
+      TodoItemView.prototype.tagName = "li";
 
-      TodoView.prototype.template = _.template(todosTemplate);
+      TodoItemView.prototype.template = _.template(todosTemplate);
 
-      TodoView.prototype.events = {
+      TodoItemView.prototype.events = {
         "click .check": "toggleDone",
         "dblclick div.todo-content": "edit",
         "click span.todo-destroy": "clear",
         "keypress .todo-input": "updateOnEnter"
       };
 
-      TodoView.prototype.initialize = function() {
+      TodoItemView.prototype.initialize = function() {
         this.model.bind('change', this.render);
         return this.model.view = this;
       };
 
-      TodoView.prototype.render = function() {
+      TodoItemView.prototype.render = function() {
         $(this.el).html(this.template(this.model.toJSON()));
         this.setContent();
         return this;
       };
 
-      TodoView.prototype.setContent = function() {
+      TodoItemView.prototype.setContent = function() {
         var content;
         content = this.model.get('content');
         this.$('.todo-content').text(content);
@@ -3280,37 +3385,37 @@ define('text!../templates/todos.html',[],function () { return '<div class="todo 
         return this.input.val(content);
       };
 
-      TodoView.prototype.toggleDone = function() {
+      TodoItemView.prototype.toggleDone = function() {
         return this.model.toggle();
       };
 
-      TodoView.prototype.edit = function() {
+      TodoItemView.prototype.edit = function() {
         $(this.el).addClass("editing");
         return this.input.focus();
       };
 
-      TodoView.prototype.close = function() {
+      TodoItemView.prototype.close = function() {
         this.model.save({
           content: this.input.val()
         });
         return $(this.el).removeClass("editing");
       };
 
-      TodoView.prototype.updateOnEnter = function(e) {
+      TodoItemView.prototype.updateOnEnter = function(e) {
         if (e.keyCode === 13) {
           return this.close();
         }
       };
 
-      TodoView.prototype.remove = function() {
+      TodoItemView.prototype.remove = function() {
         return $(this.el).remove();
       };
 
-      TodoView.prototype.clear = function() {
+      TodoItemView.prototype.clear = function() {
         return this.model.clear();
       };
 
-      return TodoView;
+      return TodoItemView;
 
     })(Backbone.View);
   });
@@ -3360,20 +3465,21 @@ define('text!../templates/stats.html',[],function () { return ' <% if (total) { 
       };
 
       AppView.prototype.initialize = function() {
+        this.todos = new Todos();
         this.input = this.$("#new-todo");
-        Todos.bind('add', this.addOne);
-        Todos.bind('reset', this.addAll);
-        Todos.bind('all', this.render);
-        return Todos.fetch();
+        this.todos.bind('add', this.addOne);
+        this.todos.bind('reset', this.addAll);
+        this.todos.bind('all', this.render);
+        return this.todos.fetch();
       };
 
       AppView.prototype.render = function() {
         var done;
-        done = Todos.done().length;
+        done = this.todos.done().length;
         return this.$('#todo-stats').html(this.statsTemplate({
-          total: Todos.length,
-          done: Todos.done().length,
-          remaining: Todos.remaining().length
+          total: this.todos.length,
+          done: this.todos.done().length,
+          remaining: this.todos.remaining().length
         }));
       };
 
@@ -3386,26 +3492,26 @@ define('text!../templates/stats.html',[],function () { return ' <% if (total) { 
       };
 
       AppView.prototype.addAll = function() {
-        return Todos.each(this.addOne);
+        return this.todos.each(this.addOne);
       };
 
       AppView.prototype.newAttributes = function() {
         return {
           content: this.input.val(),
-          order: Todos.nextOrder(),
+          order: this.todos.nextOrder(),
           done: false
         };
       };
 
       AppView.prototype.createOnEnter = function(e) {
         if (e.keyCode === 13) {
-          Todos.create(this.newAttributes());
+          this.todos.create(this.newAttributes());
           return this.input.val('');
         }
       };
 
       AppView.prototype.clearCompleted = function() {
-        _.each(Todos.done(), function(todo) {
+        _.each(this.todos.done(), function(todo) {
           return todo.clear();
         });
         return false;

@@ -1,5 +1,5 @@
 define ['jquery', 'underscore', 'backbone','text!../templates/todos.html'], ($, _, Backbone, todosTemplate) ->
-  return class TodoView extends Backbone.View
+  return class TodoItemView extends Backbone.View
 
     # ... is a list tag.
     tagName:  "li"

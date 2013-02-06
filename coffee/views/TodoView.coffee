@@ -15,41 +15,43 @@ define ['jquery','underscore', 'backbone','Todos','TodoItemView','text!../templa
       "click .todo-clear a": "clearCompleted"
 
 
-    # At initialization we bind to the relevant events on the `Todos`
+    # At initialization we bind to the relevant events on the `@todos`
     # collection, when items are added or changed. Kick things off by
     # loading any preexisting todos that might be saved in *localStorage*.
     initialize: =>
+      @todos = new Todos()
       @input    = @$("#new-todo")
-      Todos.bind('add', @addOne)
-      Todos.bind('reset', @addAll)
-      Todos.bind('all', @render)
+      @todos.bind('add', @addOne)
+      @todos.bind('reset', @addAll)
+      @todos.bind('all', @render)
 
-      Todos.fetch()
+      @todos.fetch()
 
     # Re-rendering the App just means refreshing the statistics -- the rest
     # of the app doesn't change.
     render: =>
-      done = Todos.done().length
+      done = @todos.done().length
       @$('#todo-stats').html @statsTemplate
-        total:      Todos.length
-        done:       Todos.done().length
-        remaining:  Todos.remaining().length
+        total:      @todos.length
+        done:       @todos.done().length
+        remaining:  @todos.remaining().length
 
     # Add a single todo item to the list by creating a view for it, and
     # appending its element to the `<ul>`.
     addOne: (todo) =>
-      view = new TodoItemView model: todo
+      view = new TodoItemView
+        model: todo
       @$("#todo-list").append view.render().el
 
-    # Add all items in the **Todos** collection at once.
+    # Add all items in the **@todos** collection at once.
     addAll: =>
-      Todos.each(@addOne)
+      @todos.each(@addOne)
 
     # Generate the attributes for a new Todo item.
     newAttributes: =>
       return {
         content: this.input.val()
-        order:   Todos.nextOrder()
+        order:   @todos.nextOrder()
         done:    false
       }
 
@@ -57,12 +59,12 @@ define ['jquery','underscore', 'backbone','Todos','TodoItemView','text!../templa
     # persisting it to *localStorage*.
     createOnEnter: (e) =>
       if (e.keyCode == 13)
-        Todos.create @newAttributes()
+        @todos.create @newAttributes()
         @input.val ''
 
     # Clear all done todo items, destroying their models.
     clearCompleted: =>
-      _.each Todos.done(), (todo) ->
+      _.each @todos.done(), (todo) ->
         todo.clear()
       return false
 
